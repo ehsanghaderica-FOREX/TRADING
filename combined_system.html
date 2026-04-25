@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Newton + Gravity</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Tahoma,Arial,sans-serif;background:#0d1117;color:#e6edf3;direction:rtl;font-size:13px}
+.hdr{background:#161b22;padding:10px 16px;border-bottom:1px solid #30363d;display:flex;align-items:center;justify-content:space-between}
+.hdr h1{font-size:14px;font-weight:bold;color:#58a6ff}
+.hdr-sub{font-size:10px;color:#8b949e;margin-top:2px}
+.live{display:flex;align-items:center;gap:5px;font-size:11px;color:#3fb950}
+.dot{width:7px;height:7px;border-radius:50%;background:#3fb950;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.ctrl{background:#161b22;padding:8px 12px;border-bottom:1px solid #30363d;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+select{padding:6px 8px;border:1px solid #30363d;border-radius:7px;font-size:12px;font-family:Tahoma,Arial,sans-serif;background:#0d1117;color:#e6edf3}
+.btn{padding:7px 16px;background:#238636;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-weight:bold;font-family:Tahoma,Arial,sans-serif}
+.btn:disabled{opacity:.5}
+input[type=range]{width:100px;accent-color:#58a6ff}
+.kv{font-size:12px;font-weight:bold;color:#f0b429;min-width:24px}
+.status{text-align:center;padding:40px;color:#8b949e;font-size:13px}
+.error{margin:8px;padding:12px;background:#2d0f0f;border:1px solid #da3633;border-radius:8px;color:#f85149;text-align:center}
+.prog{margin:8px;padding:12px;background:#161b22;border-radius:8px;border:1px solid #30363d;text-align:center;color:#8b949e;font-size:12px}
+
+/* News */
+.news-box{margin:0 8px 8px;background:#161b22;border-radius:10px;border:1px solid #30363d;overflow:hidden}
+.news-hdr{padding:8px 12px;font-size:12px;font-weight:bold;color:#f0b429;border-bottom:1px solid #30363d;background:#0d1117;display:flex;justify-content:space-between;align-items:center}
+.news-refresh{padding:2px 8px;background:#0d1117;border:1px solid #30363d;border-radius:5px;font-size:10px;color:#8b949e;cursor:pointer;font-family:Tahoma,Arial,sans-serif}
+.news-list{display:flex;flex-direction:column}
+.news-item{padding:8px 12px;border-bottom:1px solid #21262d;display:grid;grid-template-columns:60px 1fr auto;gap:8px;align-items:center}
+.news-item:last-child{border:none}
+.news-time{font-size:10px;color:#8b949e;text-align:center}
+.news-impact{width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:4px}
+.imp-high{background:#f85149}
+.imp-med{background:#f0b429}
+.imp-low{background:#3fb950}
+.news-title{font-size:11px;color:#e6edf3}
+.news-cur{font-size:10px;font-weight:bold;padding:1px 6px;border-radius:4px;text-align:center;white-space:nowrap}
+.cur-usd{background:#1a2a1a;color:#3fb950;border:1px solid #238636}
+.cur-eur{background:#1a1a2a;color:#58a6ff;border:1px solid #1f6feb}
+.cur-gbp{background:#2a1a2a;color:#bc8cff;border:1px solid #6f42c1}
+.news-empty{padding:12px;text-align:center;color:#8b949e;font-size:12px}
+.news-prev{font-size:10px;color:#8b949e;margin-top:1px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <h1>⚡ Newton + Gravity — سیستم ترکیبی</h1>
+    <div class="hdr-sub">نیوتن (F=ma) + گرانش EMA — تایید دوگانه</div>
+  </div>
+  <div class="live"><div class="dot"></div><span id="ut">آماده</span></div>
+</div>
+
+<div class="ctrl">
+  <select id="sym">
+    <optgroup label="فارکس اصلی">
+      <option value="EUR/USD">EUR/USD</option><option value="GBP/USD">GBP/USD</option>
+      <option value="USD/JPY">USD/JPY</option><option value="AUD/USD">AUD/USD</option>
+      <option value="USD/CAD">USD/CAD</option><option value="USD/CHF">USD/CHF</option>
+      <option value="NZD/USD">NZD/USD</option>
+    </optgroup>
+    <optgroup label="کراس">
+      <option value="EUR/GBP">EUR/GBP</option><option value="GBP/JPY">GBP/JPY</option>
+      <option value="AUD/JPY">AUD/JPY</option><option value="EUR/JPY">EUR/JPY</option>
+    </optgroup>
+    <optgroup label="کالا">
+      <option value="XAU/USD">XAU/USD — طلا</option><option value="WTI/USD">WTI/USD — نفت</option>
+    </optgroup>
+    <optgroup label="کریپتو">
+      <option value="BTC/USD">BTC/USD</option><option value="ETH/USD">ETH/USD</option>
+    </optgroup>
+  </select>
+  <select id="tf">
+    <option value="5min">۵ دقیقه</option><option value="15min">۱۵ دقیقه</option>
+    <option value="30min">۳۰ دقیقه</option><option value="1h">۱ ساعته</option>
+    <option value="4h" selected>۴ ساعته</option><option value="1day">روزانه</option>
+  </select>
+  <span style="font-size:11px;color:#8b949e">حساسیت:</span>
+  <input type="range" id="kSlider" min="0.3" max="3" step="0.1" value="1.5"
+    oninput="document.getElementById('kv').textContent=parseFloat(this.value).toFixed(1)">
+  <span class="kv" id="kv">1.5</span>
+  <button class="btn" id="btn" onclick="analyze()">تحلیل کن</button>
+</div>
+
+<div id="content"><div class="status">جفت ارز و تایم‌فریم انتخاب کنید</div></div>
+
+<script>
+const KEY = 'dea3a67f4fc1411585d1b7e8a09c8166';
+const OANDA_TOKEN = '627658dd4584bf4a9f2496bf0c0e7454-b250f32abc434fdbdfe52e6b2a3f98f6';
+const OANDA_BASE = 'https://api-fxpractice.oanda.com/v3';
+const FIB_EMA = [8,13,21,34,55,89,144,233,377];
+let tmr = null;
+
+// ══ OANDA ══
+function toOandaSym(sym){ return sym.replace('/','_').replace('WTI_USD','WTICO_USD'); }
+function toOandaGran(tf){ return {'5min':'M5','15min':'M15','30min':'M30','1h':'H1','4h':'H4','1day':'D'}[tf]||'H1'; }
+
+async function fetchOanda(sym, tf, count=500) {
+  const targetUrl = `${OANDA_BASE}/instruments/${toOandaSym(sym)}/candles?count=${count}&granularity=${toOandaGran(tf)}&price=M`;
+  
+  // روش ۱: مستقیم (اگر از سرور باز شده)
+  try {
+    const res = await fetch(targetUrl, {
+      headers:{'Authorization':'Bearer '+OANDA_TOKEN,'Accept-Datetime-Format':'RFC3339'}
+    });
+    if (res.ok) {
+      const json = await res.json();
+      const c = (json.candles||[]).filter(x=>x.complete);
+      if (c.length) return {
+        C:c.map(x=>parseFloat(x.mid.c)), H:c.map(x=>parseFloat(x.mid.h)),
+        L:c.map(x=>parseFloat(x.mid.l)), V:c.map(x=>x.volume||1),
+        last:parseFloat(c[c.length-1].mid.c), src:'OANDA'
+      };
+    }
+  } catch(e) {}
+
+  // روش ۲: از طریق corsproxy.io
+  try {
+    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+    const res = await fetch(proxyUrl, {
+      headers:{'Authorization':'Bearer '+OANDA_TOKEN,'Accept-Datetime-Format':'RFC3339',
+               'x-cors-api-key':'temp_demo'}
+    });
+    if (res.ok) {
+      const json = await res.json();
+      const c = (json.candles||[]).filter(x=>x.complete);
+      if (c.length) return {
+        C:c.map(x=>parseFloat(x.mid.c)), H:c.map(x=>parseFloat(x.mid.h)),
+        L:c.map(x=>parseFloat(x.mid.l)), V:c.map(x=>x.volume||1),
+        last:parseFloat(c[c.length-1].mid.c), src:'OANDA'
+      };
+    }
+  } catch(e) {}
+
+  // روش ۳: allorigins
+  try {
+    const proxyUrl2 = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
+    const res = await fetch(proxyUrl2);
+    if (res.ok) {
+      const json = await res.json();
+      const c = (json.candles||[]).filter(x=>x.complete);
+      if (c.length) return {
+        C:c.map(x=>parseFloat(x.mid.c)), H:c.map(x=>parseFloat(x.mid.h)),
+        L:c.map(x=>parseFloat(x.mid.l)), V:c.map(x=>x.volume||1),
+        last:parseFloat(c[c.length-1].mid.c), src:'OANDA'
+      };
+    }
+  } catch(e) {}
+
+  throw new Error('OANDA در دسترس نیست');
+}
+
+async function fetchTD(sym, tf) {
+  const res = await fetch(`https://api.twelvedata.com/time_series?symbol=${sym}&interval=${tf}&outputsize=500&apikey=${KEY}`);
+  const json = await res.json();
+  if (json.status==='error'||!json.values) throw new Error(json.message||'خطا');
+  const vals = json.values.reverse();
+  return {
+    C:vals.map(v=>parseFloat(v.close)), H:vals.map(v=>parseFloat(v.high)),
+    L:vals.map(v=>parseFloat(v.low)), V:null,
+    last:parseFloat(vals[vals.length-1].close), src:'TwelveData'
+  };
+}
+
+async function fetchData(sym, tf) {
+  try { return await fetchOanda(sym, tf); } catch(e) {}
+  return await fetchTD(sym, tf);
+}
+
+// ══ محاسبات پایه ══
+function calcEMA(data, p) {
+  if (data.length < p) return null;
+  const k = 2/(p+1);
+  let e = data.slice(0,p).reduce((a,b)=>a+b,0)/p;
+  for (let i=p; i<data.length; i++) e = data[i]*k + e*(1-k);
+  return e;
+}
+
+function calcATR(H, L, C, p=14) {
+  const tr = [H[0]-L[0]];
+  for (let i=1; i<C.length; i++)
+    tr.push(Math.max(H[i]-L[i],Math.abs(H[i]-C[i-1]),Math.abs(L[i]-C[i-1])));
+  let a = tr.slice(0,p).reduce((x,y)=>x+y,0)/p;
+  for (let i=p; i<tr.length; i++) a=(a*(p-1)+tr[i])/p;
+  return a;
+}
+
+// ══ سیستم ۱: نیوتن ══
+function newtonAnalysis(C, H, L, V, atr, k) {
+  const n = C.length-1;
+  if (n < 25) return null;
+
+  // حرکت: M = P(t) - P(t-20)
+  const M = C[n] - C[n-20];
+  const Mnorm = M / atr;
+
+  // شتاب: A = M(t) - M(t-1)
+  const M1 = C[n-1] - C[n-21];
+  const A = M - M1;
+  const Anorm = A / atr;
+
+  // نیرو: F = حجم × شتاب
+  let F;
+  if (V) {
+    const recentV = V.slice(-5).reduce((a,b)=>a+b,0)/5;
+    const avgV = V.reduce((a,b)=>a+b,0)/V.length||1;
+    F = (recentV/avgV) * Anorm;
+  } else {
+    const ranges = [];
+    for (let i=n-4; i<=n; i++) ranges.push(H[i]-L[i]);
+    F = (ranges.reduce((a,b)=>a+b,0)/5/atr) * Anorm;
+  }
+
+  const threshold = k;
+  let score = 0;
+  const signals = [];
+
+  if (Math.abs(Mnorm) > threshold) {
+    score += Mnorm > 0 ? 1 : -1;
+    signals.push(Mnorm > 0 ? 'حرکت صعودی' : 'حرکت نزولی');
+  }
+  if (Math.abs(Anorm) > threshold*0.1) {
+    if (Math.sign(A)===Math.sign(M)) { score += A>0?0.5:-0.5; signals.push('شتاب تایید'); }
+    else signals.push('⚠️ شتاب معکوس');
+  }
+  if (Math.abs(F) > 0) { score += F>0?0.5:-0.5; signals.push(F>0?'نیرو صعودی':'نیرو نزولی'); }
+
+  return { score, Mnorm, Anorm, F, signals, threshold };
+}
+
+// ══ سیستم ۲: گرانش EMA ══
+function gravityAnalysis(C, H, L, atr) {
+  const price = C[C.length-1];
+  const prevPrice = C[C.length-2];
+  let totalGravity = 0, count = 0;
+  const broken = [], targets = [];
+
+  FIB_EMA.forEach(p => {
+    if (C.length < p) return;
+    const emaVal = calcEMA(C, p);
+    if (!emaVal) return;
+    const dist = emaVal - price;
+    const distNorm = dist / atr;
+    const r = Math.abs(distNorm) || 0.001;
+    const mass = Math.log(p+1);
+    const gravity = (mass/(r*r)) * Math.sign(dist);
+    totalGravity += gravity;
+    count++;
+
+    // شکست EMA
+    const prevEMA = calcEMA(C.slice(0,-1), p);
+    if (prevEMA) {
+      if (prevPrice < prevEMA && price > emaVal) broken.push({p, dir:'up', val:emaVal});
+      else if (prevPrice > prevEMA && price < emaVal) broken.push({p, dir:'dn', val:emaVal});
+    }
+
+    // هدف بعدی
+    targets.push({p, dist, distNorm, val:emaVal});
+  });
+
+  const normG = count > 0 ? totalGravity/count : 0;
+  // normG منفی = EMAها بالای قیمت = جذب به بالا
+  // normG مثبت = EMAها زیر قیمت = جذب به پایین
+
+  const aboveCount = FIB_EMA.filter(p => {
+    const e = calcEMA(C, p); return e && e > price;
+  }).length;
+
+  // هدف‌های جذب
+  const upTargets = targets.filter(t=>t.dist>0).sort((a,b)=>a.dist-b.dist);
+  const dnTargets = targets.filter(t=>t.dist<0).sort((a,b)=>b.dist-a.dist);
+
+  let gravScore = 0;
+  if (normG < -0.3) gravScore = 1;    // جذب به بالا
+  else if (normG > 0.3) gravScore = -1; // جذب به پایین
+
+  return { normG, gravScore, broken, aboveCount, upTargets, dnTargets, price };
+}
+
+// ══ ترکیب و تحلیل نهایی ══
+function combineAndNarrate(newton, gravity, sym, atr, src) {
+  const d = sym.includes('JPY')||sym.includes('XAU')||sym.includes('WTI')||sym.includes('BTC') ? 2 : 5;
+  const price = gravity.price.toFixed(d);
+
+  // امتیاز ترکیبی
+  const combinedScore = (newton.score * 0.5) + (gravity.gravScore * 0.5);
+
+  // تایید دوگانه
+  const bothAgree = Math.sign(newton.score) === Math.sign(gravity.gravScore) && Math.abs(newton.score) >= 0.5;
+  const strongSignal = Math.abs(combinedScore) >= 0.75 && bothAgree;
+  const weakSignal = Math.abs(combinedScore) >= 0.4 && !bothAgree;
+
+  // هدف
+  const isUp = combinedScore > 0;
+  const nextTarget = isUp ? gravity.upTargets[0] : gravity.dnTargets[0];
+  const nextTarget2 = isUp ? gravity.upTargets[1] : gravity.dnTargets[1];
+
+  // شتاب معکوس
+  const reverseWarning = newton.signals.includes('⚠️ شتاب معکوس');
+
+  // ── متن تشریحی ──
+  let title, titleColor, titleBg, text;
+
+  if (strongSignal && isUp) {
+    title = '▲ فرصت خرید';
+    titleColor = '#3fb950'; titleBg = '#0a1f12';
+    text = `قیمت ${sym} در حال حاضر ${price} است و هر دو سیستم صعود را تایید می‌کنند.\n\n`;
+    text += `سیستم نیوتن: ${newton.signals.filter(s=>!s.includes('⚠️')).join('، ')} — نیروی صعودی ${Math.abs(newton.Mnorm).toFixed(1)}× آستانه.\n\n`;
+    text += `سیستم گرانش: ${gravity.aboveCount} میانگین بالای قیمت هستند و قیمت را به سمت بالا می‌کشند.`;
+    if (gravity.broken.filter(b=>b.dir==='up').length > 0)
+      text += ` EMA${gravity.broken.filter(b=>b.dir==='up').map(b=>b.p).join('، ')} شکسته شده — شتاب تایید.`;
+    if (nextTarget)
+      text += `\n\nهدف اول: EMA${nextTarget.p} در ${nextTarget.val.toFixed(d)} (فاصله ${Math.abs(nextTarget.distNorm).toFixed(1)}× ATR).`;
+    if (nextTarget2)
+      text += ` هدف دوم: EMA${nextTarget2.p} در ${nextTarget2.val.toFixed(d)}.`;
+    if (reverseWarning)
+      text += `\n\n⚠️ هشدار: شتاب در حال معکوس شدن است — با احتیاط وارد شوید.`;
+    else
+      text += `\n\nاین حرکت ادامه دارد مگر اینکه قیمت به EMA${nextTarget?.p||'بزرگ'} برسد و دفع شود.`;
+
+  } else if (strongSignal && !isUp) {
+    title = '▼ فرصت فروش';
+    titleColor = '#f85149'; titleBg = '#1f0a0a';
+    text = `قیمت ${sym} در حال حاضر ${price} است و هر دو سیستم نزول را تایید می‌کنند.\n\n`;
+    text += `سیستم نیوتن: ${newton.signals.filter(s=>!s.includes('⚠️')).join('، ')} — نیروی نزولی ${Math.abs(newton.Mnorm).toFixed(1)}× آستانه.\n\n`;
+    text += `سیستم گرانش: ${FIB_EMA.length - gravity.aboveCount} میانگین زیر قیمت هستند و قیمت را به سمت پایین می‌کشند.`;
+    if (gravity.broken.filter(b=>b.dir==='dn').length > 0)
+      text += ` EMA${gravity.broken.filter(b=>b.dir==='dn').map(b=>b.p).join('، ')} شکسته شده — شتاب تایید.`;
+    if (nextTarget)
+      text += `\n\nهدف اول: EMA${nextTarget.p} در ${nextTarget.val.toFixed(d)} (فاصله ${Math.abs(nextTarget.distNorm).toFixed(1)}× ATR).`;
+    if (nextTarget2)
+      text += ` هدف دوم: EMA${nextTarget2.p} در ${nextTarget2.val.toFixed(d)}.`;
+    if (reverseWarning)
+      text += `\n\n⚠️ هشدار: شتاب در حال معکوس شدن است — با احتیاط وارد شوید.`;
+    else
+      text += `\n\nاین حرکت ادامه دارد مگر اینکه قیمت به EMA${nextTarget?.p||'بزرگ'} برسد و دفع شود.`;
+
+  } else if (weakSignal && isUp) {
+    title = '↑ احتمال صعود — تایید ناقص';
+    titleColor = '#d29922'; titleBg = '#1c1a0a';
+    text = `قیمت ${sym} در حال حاضر ${price} است.\n\n`;
+    text += `یک سیستم صعود را نشان می‌دهد ولی دیگری هنوز تایید نکرده. `;
+    text += `سیستم نیوتن امتیاز ${newton.score.toFixed(1)} و سیستم گرانش امتیاز ${gravity.gravScore.toFixed(1)} دارد.\n\n`;
+    text += `توصیه: منتظر تایید هر دو سیستم باشید — هنوز وارد معامله نشوید.`;
+
+  } else if (weakSignal && !isUp) {
+    title = '↓ احتمال نزول — تایید ناقص';
+    titleColor = '#d29922'; titleBg = '#1c1a0a';
+    text = `قیمت ${sym} در حال حاضر ${price} است.\n\n`;
+    text += `یک سیستم نزول را نشان می‌دهد ولی دیگری هنوز تایید نکرده. `;
+    text += `سیستم نیوتن امتیاز ${newton.score.toFixed(1)} و سیستم گرانش امتیاز ${gravity.gravScore.toFixed(1)} دارد.\n\n`;
+    text += `توصیه: منتظر تایید هر دو سیستم باشید — هنوز وارد معامله نشوید.`;
+
+  } else {
+    title = '— بازار خنثی';
+    titleColor = '#8b949e'; titleBg = '#161b22';
+    text = `قیمت ${sym} در حال حاضر ${price} است.\n\n`;
+    text += `هیچ نیروی مشخصی در بازار وجود ندارد. `;
+    text += `${gravity.aboveCount} میانگین بالا و ${FIB_EMA.length - gravity.aboveCount} میانگین زیر قیمت هستند — نیروها تقریباً متعادل‌اند.\n\n`;
+    text += `توصیه: صبر کنید. وقتی قیمت یک EMA کلیدی را با حجم بشکند، سیگنال ظاهر می‌شود.`;
+  }
+
+  // ── جدول مقایسه دو سیستم ──
+  const n1Color = newton.score > 0 ? '#3fb950' : newton.score < 0 ? '#f85149' : '#8b949e';
+  const g1Color = gravity.gravScore > 0 ? '#3fb950' : gravity.gravScore < 0 ? '#f85149' : '#8b949e';
+  const n1Label = newton.score >= 1 ? 'صعودی قوی' : newton.score > 0 ? 'صعودی ضعیف' : newton.score <= -1 ? 'نزولی قوی' : newton.score < 0 ? 'نزولی ضعیف' : 'خنثی';
+  const g1Label = gravity.gravScore > 0 ? 'جذب صعودی' : gravity.gravScore < 0 ? 'جذب نزولی' : 'متعادل';
+
+  return {
+    title, titleColor, titleBg, text,
+    combinedScore, newton, gravity,
+    n1Color, g1Color, n1Label, g1Label,
+    src, d, sym, price
+  };
+}
+
+// ══ رندر UI ══
+function renderUI(result) {
+  const r = result;
+  const confBadge = Math.abs(r.combinedScore) >= 0.75
+    ? '<span style="font-size:11px;padding:2px 8px;border-radius:5px;background:'+r.titleColor+'33;color:'+r.titleColor+';border:1px solid '+r.titleColor+'">تایید دوگانه ✓</span>'
+    : '<span style="font-size:11px;padding:2px 8px;border-radius:5px;background:#1c1a0a;color:#d29922;border:1px solid #9e6a03">تایید ناقص</span>';
+
+  const srcBadge = r.src === 'OANDA'
+    ? '<span style="font-size:10px;color:#3fb950;border:1px solid #238636;padding:1px 6px;border-radius:4px">✅ OANDA</span>'
+    : '<span style="font-size:10px;color:#d29922;border:1px solid #9e6a03;padding:1px 6px;border-radius:4px">⚠️ TwelveData</span>';
+
+  const html = `
+    <!-- سیگنال اصلی -->
+    <div style="margin:8px;padding:14px 16px;background:${r.titleBg};border-radius:12px;border:2px solid ${r.titleColor}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:18px;font-weight:bold;color:${r.titleColor}">${r.title}</span>
+        <div style="display:flex;gap:6px;align-items:center">${confBadge} ${srcBadge}</div>
+      </div>
+      <div style="font-size:13px;color:#e6edf3;line-height:2;white-space:pre-line">${r.text}</div>
+    </div>
+
+    <!-- مقایسه دو سیستم -->
+    <div style="margin:0 8px 8px;background:#161b22;border-radius:10px;border:1px solid #30363d;overflow:hidden">
+      <div style="padding:8px 12px;font-size:12px;font-weight:bold;color:#58a6ff;border-bottom:1px solid #30363d;background:#0d1117">
+        🔬 مقایسه دو سیستم
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#30363d">
+
+        <!-- نیوتن -->
+        <div style="background:#161b22;padding:10px 12px">
+          <div style="font-size:11px;color:#8b949e;margin-bottom:4px">⚡ سیستم نیوتن (F=ma)</div>
+          <div style="font-size:14px;font-weight:bold;color:${r.n1Color};margin-bottom:6px">${r.n1Label}</div>
+          <div style="font-size:11px;color:#8b949e;line-height:1.8">
+            حرکت M: <span style="color:${r.newton.Mnorm>0?'#3fb950':'#f85149'}">${r.newton.Mnorm>0?'+':''}${r.newton.Mnorm.toFixed(2)}× ATR</span><br>
+            شتاب A: <span style="color:${r.newton.Anorm>0?'#3fb950':'#f85149'}">${r.newton.Anorm>0?'+':''}${r.newton.Anorm.toFixed(2)}× ATR</span><br>
+            امتیاز: <span style="color:${r.n1Color};font-weight:bold">${r.newton.score>0?'+':''}${r.newton.score.toFixed(1)}</span>
+          </div>
+          <div style="margin-top:6px;font-size:10px;color:#8b949e">${r.newton.signals.join(' | ')}</div>
+        </div>
+
+        <!-- گرانش -->
+        <div style="background:#161b22;padding:10px 12px">
+          <div style="font-size:11px;color:#8b949e;margin-bottom:4px">🌌 سیستم گرانش EMA</div>
+          <div style="font-size:14px;font-weight:bold;color:${r.g1Color};margin-bottom:6px">${r.g1Label}</div>
+          <div style="font-size:11px;color:#8b949e;line-height:1.8">
+            EMA بالای قیمت: <span style="color:#3fb950">${r.gravity.aboveCount}</span><br>
+            EMA زیر قیمت: <span style="color:#f85149">${FIB_EMA.length - r.gravity.aboveCount}</span><br>
+            گرانش کل: <span style="color:${r.g1Color};font-weight:bold">${r.gravity.normG>0?'+':''}${r.gravity.normG.toFixed(2)}</span>
+          </div>
+          ${r.gravity.broken.length > 0
+            ? `<div style="margin-top:6px;font-size:10px;color:#f0b429">⚡ شکست: EMA${r.gravity.broken.map(b=>b.p).join('، ')}</div>`
+            : '<div style="margin-top:6px;font-size:10px;color:#8b949e">شکست EMA در آخرین شمع نبود</div>'}
+        </div>
+      </div>
+
+      <!-- امتیاز ترکیبی -->
+      <div style="padding:8px 12px;border-top:1px solid #30363d;display:flex;align-items:center;gap:10px">
+        <span style="font-size:11px;color:#8b949e">امتیاز ترکیبی:</span>
+        <div style="flex:1;height:8px;background:#21262d;border-radius:4px;overflow:hidden;position:relative">
+          <div style="position:absolute;left:50%;top:0;width:1px;height:100%;background:#30363d"></div>
+          <div style="height:100%;border-radius:4px;background:${r.combinedScore>0?'#3fb950':'#f85149'};
+            width:${Math.min(Math.abs(r.combinedScore)*40,50)}%;
+            ${r.combinedScore>0?'margin-right:50%':'margin-left:'+(50-Math.min(Math.abs(r.combinedScore)*40,50))+'%'}">
+          </div>
+        </div>
+        <span style="font-size:13px;font-weight:bold;color:${r.combinedScore>0?'#3fb950':r.combinedScore<0?'#f85149':'#8b949e'}">
+          ${r.combinedScore>0?'+':''}${r.combinedScore.toFixed(2)}
+        </span>
+      </div>
+    </div>
+
+    <!-- هدف‌های قیمتی -->
+    <!-- اخبار -->
+    <div class="news-box" id="news-box">
+      <div class="news-hdr">
+        <span>📰 اخبار مهم هفته — دلار، یورو، پوند</span>
+        <button class="news-refresh" onclick="loadNews()">🔄 بروز</button>
+      </div>
+      <div id="news-list"><div class="news-empty">در حال بارگذاری اخبار...</div></div>
+    </div>
+
+    ${(r.gravity.upTargets.length > 0 || r.gravity.dnTargets.length > 0) ? `
+    <div style="margin:0 8px 8px;background:#161b22;border-radius:10px;border:1px solid #30363d;overflow:hidden">
+      <div style="padding:7px 12px;font-size:12px;font-weight:bold;color:#d29922;border-bottom:1px solid #30363d;background:#0d1117">
+        🎯 هدف‌های قیمتی (EMA Gravity)
+      </div>
+      <div style="padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div style="font-size:10px;color:#3fb950;margin-bottom:4px">▲ هدف‌های بالا</div>
+          ${r.gravity.upTargets.slice(0,3).map(t=>`
+            <div style="font-size:11px;padding:3px 0;color:#e6edf3">
+              EMA${t.p}: <span style="color:#3fb950">${t.val.toFixed(r.d)}</span>
+              <span style="color:#8b949e;font-size:10px"> (+${Math.abs(t.distNorm).toFixed(1)}×ATR)</span>
+            </div>`).join('')}
+        </div>
+        <div>
+          <div style="font-size:10px;color:#f85149;margin-bottom:4px">▼ هدف‌های پایین</div>
+          ${r.gravity.dnTargets.slice(0,3).map(t=>`
+            <div style="font-size:11px;padding:3px 0;color:#e6edf3">
+              EMA${t.p}: <span style="color:#f85149">${t.val.toFixed(r.d)}</span>
+              <span style="color:#8b949e;font-size:10px"> (${Math.abs(t.distNorm).toFixed(1)}×ATR)</span>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>` : ''}
+  `;
+
+  // اخبار بعد از رندر اضافه میشه
+  document.getElementById('content').innerHTML = html;
+  // بارگذاری اخبار
+  loadNews();
+}
+
+// ══ اجرا ══
+
+// ══ اخبار فارکس ══
+async function loadNews() {
+  const newsEl = document.getElementById('news-list');
+  if (!newsEl) return;
+  newsEl.innerHTML = '<div class="news-empty">در حال بارگذاری...</div>';
+
+  try {
+    // Forex Factory XML feed از طریق پروکسی
+    const ffUrl = 'https://nfs.faireconomy.media/ff_calendar_thisweek.json';
+    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(ffUrl);
+    
+    const res = await fetch(proxyUrl);
+    if (!res.ok) throw new Error('خطا');
+    const data = await res.json();
+    
+    // فیلتر: فقط USD, EUR, GBP با تاثیر بالا و متوسط
+    const filtered = data.filter(e => {
+      const cur = e.currency?.toUpperCase();
+      const imp = e.impact?.toLowerCase();
+      return ['USD','EUR','GBP'].includes(cur) && ['high','medium'].includes(imp);
+    }).slice(0, 15);
+
+    if (!filtered.length) {
+      newsEl.innerHTML = '<div class="news-empty">اخبار مهمی این هفته یافت نشد</div>';
+      return;
+    }
+
+    // مرتب بر اساس زمان
+    filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+    let html = '';
+    const now = new Date();
+
+    filtered.forEach(e => {
+      const date = new Date(e.date);
+      const isPast = date < now;
+      const isToday = date.toDateString() === now.toDateString();
+      const isSoon = !isPast && (date - now) < 3600000; // کمتر از یک ساعت
+
+      const timeStr = date.toLocaleDateString('fa-IR', {weekday:'short', month:'short', day:'numeric'}) 
+                    + ' ' + date.toLocaleTimeString('fa-IR', {hour:'2-digit', minute:'2-digit'});
+      
+      const cur = e.currency?.toUpperCase();
+      const curClass = cur==='USD'?'cur-usd':cur==='EUR'?'cur-eur':'cur-gbp';
+      const imp = e.impact?.toLowerCase();
+      const impClass = imp==='high'?'imp-high':imp==='medium'?'imp-med':'imp-low';
+      const impLabel = imp==='high'?'🔴':imp==='medium'?'🟡':'🟢';
+      
+      const title = e.title || e.event || '—';
+      const prev = e.previous ? 'قبلی: '+e.previous : '';
+      const forecast = e.forecast ? ' | پیش‌بینی: '+e.forecast : '';
+      
+      const rowBg = isSoon ? 'background:#1c1a0a;' : isPast ? 'opacity:0.6;' : '';
+
+      html += `<div class="news-item" style="${rowBg}">
+        <div class="news-time">${timeStr.split(' ').slice(-1)[0]}<br><span style="font-size:9px">${timeStr.split(' ').slice(0,-1).join(' ')}</span></div>
+        <div>
+          <div class="news-title">${impLabel} ${title}${isSoon?' <span style="color:#f0b429;font-size:10px">← زود!</span>':''}</div>
+          ${prev||forecast?`<div class="news-prev">${prev}${forecast}</div>`:''}
+        </div>
+        <span class="news-cur ${curClass}">${cur}</span>
+      </div>`;
+    });
+
+    newsEl.innerHTML = html;
+  } catch(e) {
+    // fallback: نمایش اخبار ثابت هفتگی مهم
+    newsEl.innerHTML = `<div class="news-empty">
+      اخبار آنلاین در دسترس نیست.<br>
+      <a href="https://www.forexfactory.com/calendar" target="_blank" 
+         style="color:#58a6ff;font-size:11px">مشاهده در Forex Factory ↗</a>
+    </div>`;
+  }
+}
+
+async function analyze() {
+  const sym = document.getElementById('sym').value;
+  const tf = document.getElementById('tf').value;
+  const k = parseFloat(document.getElementById('kSlider').value);
+  const btn = document.getElementById('btn');
+  btn.textContent = 'در حال تحلیل...'; btn.disabled = true;
+  document.getElementById('content').innerHTML = '<div class="prog">در حال دریافت داده از ' + sym + '...</div>';
+
+  try {
+    const data = await fetchData(sym, tf);
+    const {C, H, L, V, src} = data;
+    const atr = calcATR(H, L, C);
+
+    const newton = newtonAnalysis(C, H, L, V, atr, k);
+    if (!newton) throw new Error('داده کافی نیست');
+
+    const gravity = gravityAnalysis(C, H, L, atr);
+    const result = combineAndNarrate(newton, gravity, sym, atr, src);
+
+    renderUI(result);
+    document.getElementById('ut').textContent = sym + ' ' + tf + ' — ' + new Date().toLocaleTimeString('fa-IR');
+
+  } catch(e) {
+    document.getElementById('content').innerHTML = '<div class="error">خطا: ' + e.message + '</div>';
+  }
+
+  btn.textContent = 'تحلیل کن'; btn.disabled = false;
+  if (tmr) clearTimeout(tmr);
+  tmr = setTimeout(analyze, 5*60*1000);
+}
+</script>
+</body>
+</html>
