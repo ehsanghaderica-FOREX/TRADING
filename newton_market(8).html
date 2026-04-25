@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Newton Market System</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Tahoma,Arial,sans-serif;background:#0d1117;color:#e6edf3;direction:rtl;font-size:13px}
+.hdr{background:#161b22;padding:10px 16px;border-bottom:1px solid #30363d;display:flex;align-items:center;justify-content:space-between}
+.hdr h1{font-size:14px;font-weight:bold;color:#58a6ff}
+.hdr-sub{font-size:10px;color:#8b949e;margin-top:2px}
+.live{display:flex;align-items:center;gap:5px;font-size:11px;color:#3fb950}
+.dot{width:7px;height:7px;border-radius:50%;background:#3fb950;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Controls */
+.ctrl{background:#161b22;padding:8px 12px;border-bottom:1px solid #30363d;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ctrl-label{font-size:11px;color:#8b949e;white-space:nowrap}
+input[type=range]{width:120px;accent-color:#58a6ff}
+.k-val{font-size:12px;font-weight:bold;color:#f0b429;min-width:24px}
+.btn{padding:7px 16px;background:#238636;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-weight:bold;font-family:Tahoma,Arial,sans-serif}
+.btn:disabled{opacity:.5}
+.auto-badge{font-size:10px;color:#3fb950;border:1px solid #238636;padding:2px 8px;border-radius:5px}
+
+/* Dollar strength */
+.dollar-box{margin:8px;border-radius:10px;border:1px solid #30363d;overflow:hidden}
+.dollar-hdr{padding:8px 12px;font-size:12px;font-weight:bold;display:flex;align-items:center;justify-content:space-between}
+.dollar-bar-wrap{padding:0 12px 10px;display:flex;align-items:center;gap:8px}
+.dollar-bar-bg{flex:1;height:12px;background:#21262d;border-radius:6px;overflow:hidden}
+.dollar-bar-fill{height:100%;border-radius:6px;transition:width .5s}
+.dollar-val{font-size:13px;font-weight:bold;min-width:36px;text-align:left}
+
+/* Newton gauge */
+.newton-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 8px 8px}
+.newton-card{background:#161b22;border-radius:10px;border:1px solid #30363d;overflow:hidden}
+.nc-hdr{padding:7px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #21262d}
+.nc-sym{font-size:12px;font-weight:bold}
+.nc-price{font-size:11px;color:#8b949e}
+.nc-body{padding:8px 10px}
+.nc-state{font-size:14px;font-weight:bold;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.nc-metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:6px}
+.nc-metric{background:#0d1117;border-radius:6px;padding:4px 6px;text-align:center}
+.nc-ml{font-size:9px;color:#8b949e}
+.nc-mv{font-size:11px;font-weight:bold;margin-top:1px}
+.score-bar{height:6px;background:#21262d;border-radius:3px;overflow:hidden;margin-bottom:4px}
+.score-fill{height:100%;border-radius:3px;transition:width .5s}
+.score-label{font-size:10px;color:#8b949e;display:flex;justify-content:space-between}
+
+/* Timeframe grid */
+.tf-section{margin:0 8px 8px;background:#161b22;border-radius:10px;border:1px solid #30363d;overflow:hidden}
+.tf-hdr{padding:8px 12px;font-size:12px;font-weight:bold;color:#d29922;border-bottom:1px solid #30363d}
+.tf-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#30363d}
+.tf-cell{background:#161b22;padding:7px 8px;text-align:center}
+.tf-name{font-size:10px;color:#8b949e;margin-bottom:3px}
+.tf-signal{font-size:12px;font-weight:bold}
+.tf-score{font-size:10px;color:#8b949e;margin-top:2px}
+
+/* Correlation */
+.corr-box{margin:0 8px 8px;background:#161b22;border-radius:10px;border:1px solid #30363d;overflow:hidden}
+.corr-hdr{padding:8px 12px;font-size:12px;font-weight:bold;color:#bc8cff;border-bottom:1px solid #30363d}
+.corr-body{padding:8px 10px;display:flex;flex-direction:column;gap:5px}
+.corr-row{display:flex;align-items:center;gap:8px}
+.corr-label{font-size:11px;color:#8b949e;min-width:80px}
+.corr-bar-bg{flex:1;height:8px;background:#21262d;border-radius:4px;overflow:hidden}
+.corr-bar-fill{height:100%;border-radius:4px}
+.corr-val{font-size:11px;font-weight:bold;min-width:30px;text-align:left}
+
+/* Signal box */
+.main-signal{margin:0 8px 8px;padding:12px 14px;border-radius:10px;border:2px solid #30363d}
+.ms-buy{background:#0a1f12;border-color:#238636}
+.ms-sell{background:#1f0a0a;border-color:#da3633}
+.ms-neutral{background:#161b22;border-color:#30363d}
+.ms-title{font-size:16px;font-weight:bold;margin-bottom:6px}
+.ms-reason{font-size:11px;color:#8b949e;line-height:1.6}
+.ms-score{font-size:12px;margin-top:6px}
+
+.up{color:#3fb950}.dn{color:#f85149}.nu{color:#8b949e}
+.status{text-align:center;padding:40px;color:#8b949e}
+.error{margin:8px;padding:10px;background:#2d0f0f;border:1px solid #da3633;border-radius:8px;color:#f85149;text-align:center;font-size:12px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <h1>⚡ Newton Market System</h1>
+    <div class="hdr-sub">بر اساس قوانین حرکت نیوتن — F=ma</div>
+  </div>
+  <div class="live"><div class="dot"></div><span id="ut">آماده</span></div>
+</div>
+
+<div class="ctrl" style="flex-direction:column;align-items:stretch;gap:8px">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <span class="ctrl-label">آستانه (k):</span>
+    <input type="range" id="kSlider" min="0.3" max="3" step="0.1" value="1" oninput="document.getElementById('kVal').textContent=parseFloat(this.value).toFixed(1)">
+    <span class="k-val" id="kVal">1.0</span>
+    <span class="ctrl-label" style="margin-right:4px">حساس←→محافظه‌کار</span>
+    <button class="btn" id="btn" onclick="runAnalysis()">تحلیل کن</button>
+    <span class="auto-badge" id="autoBadge">آپدیت خودکار: ۲ دقیقه</span>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+    <span class="ctrl-label">جفت ارزها:</span>
+    <button onclick="toggleAll(true)" style="padding:3px 8px;background:#1f6feb;color:#fff;border:none;border-radius:5px;font-size:10px;cursor:pointer;font-family:Tahoma">همه</button>
+    <button onclick="toggleAll(false)" style="padding:3px 8px;background:#0d1117;color:#8b949e;border:1px solid #30363d;border-radius:5px;font-size:10px;cursor:pointer;font-family:Tahoma">هیچ</button>
+    <span id="pair-checkboxes" style="display:flex;gap:5px;flex-wrap:wrap"></span>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+    <span class="ctrl-label">تایم‌فریم:</span>
+    <span id="tf-buttons" style="display:flex;gap:4px;flex-wrap:wrap"></span>
+  </div>
+</div>
+
+<div id="content"><div class="status">دکمه «تحلیل کن» را بزنید</div></div>
+
+<script>
+const KEY = 'dea3a67f4fc1411585d1b7e8a09c8166';
+const OANDA_TOKEN = '627658dd4584bf4a9f2496bf0c0e7454-b250f32abc434fdbdfe52e6b2a3f98f6';
+const OANDA_BASE = 'https://api-fxpractice.oanda.com/v3';
+
+function toOandaSym(sym) {
+  return sym.replace('/', '_').replace('XAU_USD','XAU_USD').replace('WTI_USD','WTICO_USD');
+}
+function toOandaGran(tf) {
+  const map={'5min':'M5','15min':'M15','30min':'M30','45min':'M30','1h':'H1','2h':'H2','4h':'H4','8h':'H8','1day':'D','1week':'W'};
+  return map[tf]||'H1';
+}
+
+async function fetchOanda(sym, tf, count=80) {
+  const instrument = toOandaSym(sym);
+  const gran = toOandaGran(tf);
+  const targetUrl = `${OANDA_BASE}/instruments/${instrument}/candles?count=${count}&granularity=${gran}&price=M`;
+  const headers = {'Authorization':'Bearer '+OANDA_TOKEN,'Accept-Datetime-Format':'RFC3339'};
+
+  const proxies = [
+    async () => { const r=await fetch(targetUrl,{headers}); if(!r.ok) throw new Error(); return r.json(); },
+    async () => { const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(targetUrl),{headers:{...headers,'x-cors-api-key':'temp_demo'}}); if(!r.ok) throw new Error(); return r.json(); },
+    async () => { const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(targetUrl)); if(!r.ok) throw new Error(); return r.json(); }
+  ];
+
+  for (const proxy of proxies) {
+    try {
+      const json = await proxy();
+      const candles = (json.candles||[]).filter(c=>c.complete);
+      if (candles.length) return {
+        C:candles.map(c=>parseFloat(c.mid.c)), H:candles.map(c=>parseFloat(c.mid.h)),
+        L:candles.map(c=>parseFloat(c.mid.l)), V:candles.map(c=>c.volume||1),
+        last:parseFloat(candles[candles.length-1].mid.c)
+      };
+    } catch(e) {}
+  }
+  throw new Error('OANDA در دسترس نیست');
+}
+
+const PAIRS = [
+  {sym:'EUR/USD', label:'EURUSD', dollarDir:-1},
+  {sym:'GBP/USD', label:'GBPUSD', dollarDir:-1},
+  {sym:'USD/JPY', label:'USDJPY', dollarDir:+1},
+  {sym:'AUD/USD', label:'AUDUSD', dollarDir:-1},
+  {sym:'USD/CAD', label:'USDCAD', dollarDir:+1},
+  {sym:'USD/CHF', label:'USDCHF', dollarDir:+1},
+  {sym:'NZD/USD', label:'NZDUSD', dollarDir:-1},
+  {sym:'GBP/JPY', label:'GBPJPY', dollarDir:0},
+  {sym:'EUR/JPY', label:'EURJPY', dollarDir:0},
+  {sym:'XAU/USD', label:'XAUUSD', dollarDir:-1},
+  {sym:'WTI/USD', label:'WTIUSD', dollarDir:-1},
+  {sym:'BTC/USD', label:'BTCUSD', dollarDir:0},
+];
+
+
+const TF_LIST = [
+  {v:'5min',l:'۵ دقیقه'},{v:'15min',l:'۱۵ دقیقه'},{v:'30min',l:'۳۰ دقیقه'},
+  {v:'1h',l:'۱ ساعته'},{v:'2h',l:'۲ ساعته'},{v:'4h',l:'۴ ساعته'},
+  {v:'8h',l:'۸ ساعته'},{v:'1day',l:'روز'},{v:'1week',l:'هفته'}
+];
+let activeTF = '1h';
+
+function initCheckboxes() {
+  const wrap = document.getElementById('pair-checkboxes');
+  if (!wrap) return;
+  wrap.innerHTML = PAIRS.map(p =>
+    `<label style="display:flex;align-items:center;gap:3px;font-size:11px;color:#e6edf3;cursor:pointer;background:#0d1117;border:1px solid #30363d;border-radius:5px;padding:3px 7px">
+      <input type="checkbox" checked value="${p.sym}" style="accent-color:#58a6ff"> ${p.label}
+    </label>`
+  ).join('');
+
+  const tfWrap = document.getElementById('tf-buttons');
+  if (!tfWrap) return;
+  tfWrap.innerHTML = TF_LIST.map(t =>
+    `<button onclick="setTF('${t.v}',this)" style="padding:3px 10px;background:${t.v===activeTF?'#1f6feb':'#0d1117'};color:${t.v===activeTF?'#fff':'#8b949e'};border:1px solid ${t.v===activeTF?'#58a6ff':'#30363d'};border-radius:5px;font-size:11px;cursor:pointer;font-family:Tahoma">${t.l}</button>`
+  ).join('');
+}
+
+function setTF(tf, el) {
+  activeTF = tf;
+  document.querySelectorAll('#tf-buttons button').forEach(b => {
+    b.style.background = '#0d1117';
+    b.style.color = '#8b949e';
+    b.style.borderColor = '#30363d';
+  });
+  el.style.background = '#1f6feb';
+  el.style.color = '#fff';
+  el.style.borderColor = '#58a6ff';
+}
+function toggleAll(val) {
+  document.querySelectorAll('#pair-checkboxes input[type=checkbox]').forEach(cb => cb.checked = val);
+}
+function getSelectedPairs() {
+  const checked = [...document.querySelectorAll('#pair-checkboxes input[type=checkbox]')].filter(cb => cb.checked).map(cb => cb.value);
+  return PAIRS.filter(p => checked.includes(p.sym));
+}
+window.addEventListener('load', initCheckboxes);
+
+const TIMEFRAMES = [
+  {tf:'5min',  label:'۵D'},
+  {tf:'15min', label:'۱۵D'},
+  {tf:'30min', label:'۳۰D'},
+  {tf:'1h',    label:'۱H'},
+  {tf:'4h',    label:'۴H'},
+  {tf:'1day',  label:'۱D'},
+];
+
+let tmr = null;
+
+// ══ محاسبات فیزیک بازار ══
+
+function calcATR(H, L, C, p=14) {
+  const tr = [H[0]-L[0]];
+  for (let i=1; i<C.length; i++)
+    tr.push(Math.max(H[i]-L[i], Math.abs(H[i]-C[i-1]), Math.abs(L[i]-C[i-1])));
+  let atr = tr.slice(0,p).reduce((a,b)=>a+b,0)/p;
+  for (let i=p; i<tr.length; i++) atr = (atr*(p-1)+tr[i])/p;
+  return atr;
+}
+
+function calcMomentum(C, n=20) {
+  // M(t) = P(t) - P(t-n)
+  if (C.length < n+1) return 0;
+  return C[C.length-1] - C[C.length-1-n];
+}
+
+function calcAcceleration(C, n=10) {
+  // A(t) = M(t) - M(t-1)
+  if (C.length < n+3) return 0;
+  const m1 = C[C.length-1] - C[C.length-1-n];
+  const m2 = C[C.length-2] - C[C.length-2-n];
+  return m1 - m2;
+}
+
+function calcForce(C, H, L, n=5, V=null) {
+  if (C.length < n+1) return 0;
+  const acc = calcAcceleration(C, n);
+  if (V && V.length >= n) {
+    // حجم واقعی OANDA
+    const recentVol = V.slice(-n).reduce((a,b)=>a+b,0)/n;
+    const avgVol = V.reduce((a,b)=>a+b,0)/V.length || 1;
+    const volRatio = recentVol / avgVol;
+    return volRatio * acc;
+  }
+  // fallback: دامنه شمع
+  const recentRanges = [];
+  for (let i=C.length-n; i<C.length; i++) recentRanges.push(H[i]-L[i]);
+  const avgRange = recentRanges.reduce((a,b)=>a+b,0)/n;
+  return avgRange * acc;
+}
+
+function calcNewtonScore(C, H, L, atr, k, V=null) {
+  const M = calcMomentum(C, 20);
+  const A = calcAcceleration(C, 10);
+  const F = calcForce(C, H, L, 5, V);
+  const threshold = k * atr;
+
+  let score = 0;
+  const reasons = [];
+
+  // امتیاز حرکت
+  if (Math.abs(M) > threshold) {
+    score += M > 0 ? 1 : -1;
+    reasons.push(M > 0 ? 'حرکت صعودی' : 'حرکت نزولی');
+  }
+
+  // امتیاز شتاب
+  if (Math.abs(A) > threshold * 0.1) {
+    if (Math.sign(A) === Math.sign(M) && Math.abs(M) > threshold * 0.5) {
+      score += A > 0 ? 0.5 : -0.5;
+      reasons.push(A > 0 ? 'شتاب صعودی' : 'شتاب نزولی');
+    } else if (Math.sign(A) !== Math.sign(M) && Math.abs(M) > threshold) {
+      score += A > 0 ? 0.5 : -0.5;
+      reasons.push('⚠️ شتاب معکوس — احتمال برگشت');
+    }
+  }
+
+  // امتیاز نیرو
+  if (Math.abs(F) > 0) {
+    score += F > 0 ? 0.5 : -0.5;
+    reasons.push(F > 0 ? 'نیرو صعودی' : 'نیرو نزولی');
+  }
+
+  // وضعیت
+  let state, color;
+  if (Math.abs(score) < 0.5) { state = 'خنثی'; color = '#8b949e'; }
+  else if (score >= 1.5) { state = '▲ صعودی قوی'; color = '#3fb950'; }
+  else if (score > 0) { state = '▲ صعودی ضعیف'; color = '#69db7c'; }
+  else if (score <= -1.5) { state = '▼ نزولی قوی'; color = '#f85149'; }
+  else { state = '▼ نزولی ضعیف'; color = '#f08080'; }
+
+  return { M, A, F, score, state, color, reasons, atr, threshold };
+}
+
+// ══ دریافت داده ══
+async function fetchPair(sym, tf, bars=80) {
+  // اول OANDA
+  try {
+    const data = await fetchOanda(sym, tf, bars);
+    return data;
+  } catch(e) {}
+  // fallback به Twelve Data
+  try {
+    const url = `https://api.twelvedata.com/time_series?symbol=${sym}&interval=${tf}&outputsize=${bars}&apikey=${KEY}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if (json.status === 'error' || !json.values) return null;
+    const vals = json.values.reverse();
+    return {
+      C: vals.map(v=>parseFloat(v.close)),
+      H: vals.map(v=>parseFloat(v.high)),
+      L: vals.map(v=>parseFloat(v.low)),
+      V: null,
+      last: parseFloat(vals[vals.length-1].close)
+    };
+  } catch(e) { return null; }
+}
+
+// ══ تایید چندگانه ══
+function calcDollarStrength(results) {
+  // بر اساس جفت‌هایی که مستقیم با دلار هستند
+  let dollarScore = 0, count = 0;
+  results.forEach(r => {
+    const pair = PAIRS.find(p => p.sym === r.sym);
+    if (!pair || pair.dollarDir === 0) return;
+    // اگر دلار در صورت کسر است (USDXXX) و صعودی → دلار قوی
+    // اگر دلار در مخرج است (XXXUSD) و نزولی → دلار قوی
+    const dollarSignal = r.newton.score * pair.dollarDir * -1;
+    dollarScore += dollarSignal;
+    count++;
+  });
+  return count > 0 ? dollarScore / count : 0;
+}
+
+function getMultiConfirm(results, targetSym) {
+  const target = results.find(r => r.sym === targetSym);
+  if (!target) return 0;
+  const targetDir = Math.sign(target.newton.score);
+  if (targetDir === 0) return 0;
+
+  let confirmCount = 0;
+  // بررسی همبستگی با سایر جفت‌ها
+  const correlated = {
+    'EUR/USD': ['GBP/USD', 'AUD/USD', 'NZD/USD', 'XAU/USD'],
+    'GBP/USD': ['EUR/USD', 'AUD/USD', 'GBP/JPY'],
+    'USD/JPY': ['USD/CAD', 'USD/CHF', 'GBP/JPY', 'EUR/JPY'],
+    'XAU/USD': ['EUR/USD', 'AUD/USD'],
+    'WTI/USD': ['USD/CAD'],
+    'GBP/JPY': ['EUR/JPY', 'USD/JPY'],
+  };
+
+  const corrPairs = correlated[targetSym] || [];
+  corrPairs.forEach(p => {
+    const corr = results.find(r => r.sym === p);
+    if (!corr) return;
+    const pair = PAIRS.find(x => x.sym === p);
+    const targetPair = PAIRS.find(x => x.sym === targetSym);
+    if (!pair || !targetPair) return;
+    // تایید بر اساس قدرت دلار
+    if (pair.dollarDir !== 0 && targetPair.dollarDir !== 0) {
+      const corrDir = Math.sign(corr.newton.score) * pair.dollarDir * targetPair.dollarDir * -1;
+      if (corrDir === targetDir) confirmCount++;
+    } else {
+      if (Math.sign(corr.newton.score) === targetDir) confirmCount++;
+    }
+  });
+
+  return Math.min(corrPairs.length > 0 ? confirmCount / corrPairs.length : 0, 1);
+}
+
+// ══ رسم UI ══
+
+function generateNarrative(results, dollarStrength) {
+  if (!results.length) return '';
+
+  // تعیین وضعیت کلی بازار
+  const strongBuys  = results.filter(r => r.newton.score >= 1.5);
+  const weakBuys    = results.filter(r => r.newton.score > 0 && r.newton.score < 1.5);
+  const strongSells = results.filter(r => r.newton.score <= -1.5);
+  const weakSells   = results.filter(r => r.newton.score < 0 && r.newton.score > -1.5);
+  const neutrals    = results.filter(r => Math.abs(r.newton.score) < 0.5);
+
+  const dollarStr = dollarStrength > 0.5 ? 'قوی' : dollarStrength < -0.5 ? 'ضعیف' : 'خنثی';
+
+  let html = '';
+
+  // ── تابلو کلی ──
+  let overallIcon, overallText, overallBg, overallColor;
+  if (strongBuys.length >= 2) {
+    overallIcon = '▲'; overallText = 'فرصت خرید';
+    overallBg = '#0a1f12'; overallColor = '#3fb950';
+  } else if (strongSells.length >= 2) {
+    overallIcon = '▼'; overallText = 'فرصت فروش';
+    overallBg = '#1f0a0a'; overallColor = '#f85149';
+  } else if (strongBuys.length === 1) {
+    overallIcon = '▲'; overallText = 'احتمال خرید';
+    overallBg = '#0d1f10'; overallColor = '#69db7c';
+  } else if (strongSells.length === 1) {
+    overallIcon = '▼'; overallText = 'احتمال فروش';
+    overallBg = '#1f0d0a'; overallColor = '#f08080';
+  } else {
+    overallIcon = '—'; overallText = 'بازار خنثی';
+    overallBg = '#161b22'; overallColor = '#8b949e';
+  }
+
+  html += `<div style="padding:10px 12px;background:${overallBg};border-radius:8px;border:1px solid ${overallColor};margin-bottom:10px">
+    <div style="font-size:16px;font-weight:bold;color:${overallColor};margin-bottom:5px">${overallIcon} ${overallText}</div>
+    <div style="font-size:12px;color:#8b949e">دلار آمریکا: ${dollarStr} | ${results.length} جفت ارز بررسی شد</div>
+  </div>`;
+
+  // ── تحلیل هر جفت ارز به زبان ساده ──
+  html += '<div style="display:flex;flex-direction:column;gap:7px">';
+
+  results.forEach(r => {
+    const n = r.newton;
+    const sym = r.sym;
+    const d = sym.includes('JPY')||sym.includes('XAU')||sym.includes('WTI')||sym.includes('BTC') ? 2 : 5;
+    const price = r.last?.toFixed(d) || '—';
+    const mMag = Math.abs(n.M / n.atr).toFixed(1);
+    const conf = r.confirmPct || 0;
+
+    let icon, color, bg, verdict, detail;
+
+    if (n.score >= 1.5 && conf >= 50) {
+      icon = '▲▲'; color = '#3fb950'; bg = '#0a1f12';
+      verdict = 'فرصت خرید قوی';
+      detail = `قیمت ${price} — نیروی صعودی ${mMag}× آستانه با تایید ${conf}% از سایر ارزها.`;
+    } else if (n.score >= 1.5) {
+      icon = '▲'; color = '#69db7c'; bg = '#0d1f10';
+      verdict = 'احتمال خرید';
+      detail = `قیمت ${price} — نیروی صعودی ${mMag}× آستانه ولی تایید چندگانه کم است (${conf}%).`;
+    } else if (n.score <= -1.5 && conf >= 50) {
+      icon = '▼▼'; color = '#f85149'; bg = '#1f0a0a';
+      verdict = 'فرصت فروش قوی';
+      detail = `قیمت ${price} — نیروی نزولی ${mMag}× آستانه با تایید ${conf}% از سایر ارزها.`;
+    } else if (n.score <= -1.5) {
+      icon = '▼'; color = '#f08080'; bg = '#1f0d0a';
+      verdict = 'احتمال فروش';
+      detail = `قیمت ${price} — نیروی نزولی ${mMag}× آستانه ولی تایید چندگانه کم است (${conf}%).`;
+    } else if (n.A !== 0 && Math.abs(n.score) >= 0.5) {
+      const dir = n.score > 0 ? 'صعودی' : 'نزولی';
+      icon = n.score > 0 ? '↑' : '↓'; 
+      color = n.score > 0 ? '#d29922' : '#d29922'; bg = '#1c1a0a';
+      verdict = `حرکت ${dir} ضعیف`;
+      detail = `قیمت ${price} — نیرو شروع شده ولی هنوز به آستانه نرسیده. منتظر تایید باشید.`;
+    } else {
+      icon = '—'; color = '#8b949e'; bg = '#161b22';
+      verdict = 'خنثی';
+      detail = `قیمت ${price} — هیچ نیروی مشخصی وجود ندارد.`;
+    }
+
+    // هشدار شتاب معکوس
+    let warning = '';
+    if (Math.abs(n.score) >= 1 && Math.sign(n.A) !== Math.sign(n.score) && n.A !== 0)
+      warning = ' ⚠️ شتاب در حال معکوس شدن است — احتمال برگشت.';
+
+    html += `<div style="padding:8px 10px;background:${bg};border-radius:7px;border:1px solid ${color}33">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+        <span style="font-weight:bold;color:${color}">${icon} ${sym}</span>
+        <span style="font-size:11px;font-weight:bold;color:${color}">${verdict}</span>
+      </div>
+      <div style="font-size:11px;color:#8b949e">${detail}${warning}</div>
+    </div>`;
+  });
+
+  html += '</div>';
+  return html;
+}
+
+function renderResults(results, k) {
+  const dollarStrength = calcDollarStrength(results);
+  const dollarPct = Math.min(Math.max((dollarStrength + 2) / 4 * 100, 0), 100);
+  const dollarColor = dollarStrength > 0.3 ? '#3fb950' : dollarStrength < -0.3 ? '#f85149' : '#8b949e';
+  const dollarLabel = dollarStrength > 0.5 ? '▲ دلار قوی' : dollarStrength < -0.5 ? '▼ دلار ضعیف' : '— دلار خنثی';
+
+  let html = '';
+
+  // ── قدرت دلار ──
+  html += `<div class="dollar-box">
+    <div class="dollar-hdr" style="background:#0d1117">
+      <span style="color:#d29922">💵 قدرت دلار (DXY شبیه‌سازی)</span>
+      <span style="color:${dollarColor};font-size:13px">${dollarLabel}</span>
+    </div>
+    <div class="dollar-bar-wrap">
+      <span style="font-size:10px;color:#8b949e">ضعیف</span>
+      <div class="dollar-bar-bg">
+        <div class="dollar-bar-fill" style="width:${dollarPct}%;background:${dollarColor}"></div>
+      </div>
+      <span style="font-size:10px;color:#8b949e">قوی</span>
+      <span class="dollar-val" style="color:${dollarColor}">${(dollarStrength).toFixed(2)}</span>
+    </div>
+  </div>`;
+
+  // ── سیگنال اصلی ──
+  // پیدا کردن قوی‌ترین سیگنال
+  let bestBuy = null, bestSell = null;
+  results.forEach(r => {
+    const conf = getMultiConfirm(results, r.sym);
+    const totalScore = r.newton.score + conf * 2;
+    r.totalScore = totalScore;
+    r.confirmPct = Math.round(conf * 100);
+    if (totalScore > 0 && (!bestBuy || totalScore > bestBuy.totalScore)) bestBuy = r;
+    if (totalScore < 0 && (!bestSell || totalScore < bestSell.totalScore)) bestSell = r;
+  });
+
+  const mainSignal = Math.abs((bestBuy?.totalScore||0)) > Math.abs((bestSell?.totalScore||0)) ? bestBuy : bestSell;
+  if (mainSignal) {
+    const isBuy = mainSignal.totalScore > 0;
+    const sigClass = isBuy ? 'ms-buy' : 'ms-sell';
+    const sigColor = isBuy ? '#3fb950' : '#f85149';
+    const sigIcon = isBuy ? '▲' : '▼';
+    const sigLabel = isBuy ? 'سیگنال خرید' : 'سیگنال فروش';
+    const strength = Math.abs(mainSignal.totalScore);
+    const strengthLabel = strength > 3 ? 'خیلی قوی' : strength > 2 ? 'قوی' : strength > 1 ? 'متوسط' : 'ضعیف';
+    html += `<div class="main-signal ${sigClass}">
+      <div class="ms-title" style="color:${sigColor}">${sigIcon} ${sigLabel} — ${mainSignal.sym} (${strengthLabel})</div>
+      <div class="ms-reason">${mainSignal.newton.reasons.join(' | ')}<br>تایید چندگانه: ${mainSignal.confirmPct}%</div>
+      <div class="ms-score" style="color:${sigColor}">امتیاز نیوتنی: ${mainSignal.totalScore.toFixed(2)} | قیمت: ${mainSignal.last?.toFixed(mainSignal.sym.includes('JPY')?3:5)}</div>
+    </div>`;
+  } else {
+    html += '<div class="main-signal ms-neutral"><div class="ms-title nu">— بازار خنثی</div><div class="ms-reason">هیچ نیروی قابل توجهی شناسایی نشد</div></div>';
+  }
+
+  // ── متن توضیحی ──
+  const narrative = generateNarrative(results, dollarStrength);
+  html += `<div style="margin:0 8px 8px">${narrative}</div>`;
+
+  // ── کارت‌های جفت ارزها ──
+  html += '<div class="newton-grid">';
+  results.forEach(r => {
+    const n = r.newton;
+    const scorePct = Math.min(Math.abs(n.score) / 3 * 100, 100);
+    const scoreColor = n.score > 0 ? '#3fb950' : n.score < 0 ? '#f85149' : '#8b949e';
+    const mColor = n.M > 0 ? '#3fb950' : n.M < 0 ? '#f85149' : '#8b949e';
+    const aColor = n.A > 0 ? '#3fb950' : n.A < 0 ? '#f85149' : '#8b949e';
+    const fColor = n.F > 0 ? '#3fb950' : n.F < 0 ? '#f85149' : '#8b949e';
+    const lastFmt = r.last?.toFixed(r.sym.includes('JPY')||r.sym.includes('XAU')||r.sym.includes('WTI')||r.sym.includes('BTC')?2:5);
+    html += `<div class="newton-card">
+      <div class="nc-hdr">
+        <span class="nc-sym" style="color:${scoreColor}">${r.sym.replace('/','')} </span>
+        <span class="nc-price">${lastFmt||'—'}</span>
+      </div>
+      <div class="nc-body">
+        <div class="nc-state" style="color:${n.color}">${n.state}</div>
+        <div class="nc-metrics">
+          <div class="nc-metric"><div class="nc-ml">M حرکت</div><div class="nc-mv" style="color:${mColor}">${n.M>0?'+':''}${(n.M/n.atr).toFixed(1)}×</div></div>
+          <div class="nc-metric"><div class="nc-ml">A شتاب</div><div class="nc-mv" style="color:${aColor}">${n.A>0?'+':''}${(n.A/n.atr*10).toFixed(1)}</div></div>
+          <div class="nc-metric"><div class="nc-ml">تایید</div><div class="nc-mv" style="color:#bc8cff">${r.confirmPct||0}%</div></div>
+        </div>
+        <div class="score-bar"><div class="score-fill" style="width:${scorePct}%;background:${scoreColor}"></div></div>
+        <div class="score-label"><span>امتیاز: ${n.score.toFixed(1)}</span><span>آستانه: ${n.threshold.toFixed(5)}</span></div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // ── همبستگی ──
+  html += `<div class="corr-box">
+    <div class="corr-hdr">🔗 همبستگی با قدرت دلار</div>
+    <div class="corr-body">`;
+  results.filter(r => PAIRS.find(p=>p.sym===r.sym)?.dollarDir !== 0).forEach(r => {
+    const pair = PAIRS.find(p=>p.sym===r.sym);
+    const dollarSignal = r.newton.score * (pair.dollarDir||0) * -1;
+    const pct = Math.min(Math.abs(dollarSignal)/2*100, 100);
+    const color = dollarSignal > 0 ? '#3fb950' : dollarSignal < 0 ? '#f85149' : '#8b949e';
+    html += `<div class="corr-row">
+      <span class="corr-label">${r.sym.replace('/','')} </span>
+      <div class="corr-bar-bg"><div class="corr-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span class="corr-val" style="color:${color}">${dollarSignal>0?'+':''}${dollarSignal.toFixed(1)}</span>
+    </div>`;
+  });
+  html += '</div></div>';
+
+  document.getElementById('content').innerHTML = html;
+}
+
+// ══ اجرای اصلی ══
+async function runAnalysis() {
+  const btn = document.getElementById('btn');
+  btn.textContent = 'در حال تحلیل...'; btn.disabled = true;
+  document.getElementById('content').innerHTML = '<div class="status">در حال دریافت داده از ' + PAIRS.length + ' جفت ارز...<br><span style="font-size:11px;color:#8b949e;margin-top:8px;display:block">چند ثانیه صبر کنید</span></div>';
+
+  const k = parseFloat(document.getElementById('kSlider').value);
+
+  try {
+    // دریافت داده با تاخیر برای جلوگیری از rate limit
+    const results = [];
+    const selectedPairs = getSelectedPairs();
+    if (!selectedPairs.length) {
+      document.getElementById('content').innerHTML = '<div class="error">حداقل یک جفت ارز انتخاب کنید</div>';
+      btn.textContent = 'تحلیل کن'; btn.disabled = false; return;
+    }
+    for (let i = 0; i < selectedPairs.length; i++) {
+      const pair = selectedPairs[i];
+      if (i > 0 && i % 7 === 0) await new Promise(r => setTimeout(r, 1000));
+      const data = await fetchPair(pair.sym, activeTF, 80);
+      if (!data) continue;
+      const atr = calcATR(data.H, data.L, data.C);
+      const newton = calcNewtonScore(data.C, data.H, data.L, atr, k, data.V);
+      results.push({ sym: pair.sym, label: pair.label, last: data.last, newton });
+    }
+
+    if (!results.length) throw new Error('داده‌ای دریافت نشد — rate limit Twelve Data. یک دقیقه صبر کنید');
+
+    renderResults(results, k);
+    document.getElementById('ut').textContent = 'آپدیت: ' + new Date().toLocaleTimeString('fa-IR');
+
+  } catch(e) {
+    document.getElementById('content').innerHTML = '<div class="error">خطا: ' + e.message + '</div>';
+  }
+
+  btn.textContent = 'تحلیل کن'; btn.disabled = false;
+  if (tmr) clearTimeout(tmr);
+  tmr = setTimeout(runAnalysis, 2 * 60 * 1000);
+}
+</script>
+</body>
+</html>
